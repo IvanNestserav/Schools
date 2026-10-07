@@ -590,7 +590,7 @@
             </div>
         </div>
 
-        <form id="intakeForm" action="https://formsubmit.co/ajax/inestserav@schools.nyc.edu" method="POST">
+        <form id="intakeForm" action="https://formsubmit.co/ajax/inestserav@schools.nyc.gov" method="POST">
             <!-- Hidden fields for FormSubmit -->
             <input type="hidden" name="_subject" value="New Intake Form Submission">
             <input type="hidden" name="_template" value="table">
@@ -1292,9 +1292,11 @@
                     headers: { 'Accept': 'application/json' }
                 });
 
-                const result = await response.json();
+                const result = await response.json().catch(() => {
+                    throw new Error('The sending service returned an unreadable response (HTTP ' + response.status + ').');
+                });
                 if (!response.ok || !(result.success === true || result.success === 'true')) {
-                    throw new Error(result.message || 'Submission failed');
+                    throw new Error(result.message || result.error || 'The sending service did not confirm submission (HTTP ' + response.status + ').');
                 }
 
                 form.classList.add('hidden');
@@ -1302,7 +1304,8 @@
                 thankYou.focus({ preventScroll: true });
                 thankYou.scrollIntoView({ behavior: 'smooth', block: 'center' });
             } catch (error) {
-                submissionStatus.textContent = 'Your questionnaire could not be submitted. Your answers are still here. Please try again.';
+                const reason = error instanceof TypeError ? 'Could not connect to the sending service. Check your connection or browser content blocker.' : error.message;
+                submissionStatus.textContent = 'Your questionnaire could not be submitted. ' + reason + ' Your answers are still here.';
                 submitButton.disabled = false;
                 submitButton.textContent = 'SEND';
             }
